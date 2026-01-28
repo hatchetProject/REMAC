@@ -1,0 +1,127 @@
+{
+    "mjc_half_cheetah": {
+        "description": "3e-4",
+        "schedule": 3,
+        "schedule_start": 0.6,
+        "schedule_end": 0.0,
+        "setting": 0, 
+        "warmup": 4,
+        "hold": 0.15
+    },
+    "mjc_swimmer": {
+        "description": "3e-4",
+        "schedule": 3,
+        "schedule_start": 1.0,
+        "schedule_end": 0.2,
+        "setting": 1,
+        "warmup": 2000,
+        "hold": 0.1
+    },
+    "cartpole_thrust": {
+        "description": "3e-4",
+        "schedule": 3,
+        "schedule_start": 1.0,
+        "schedule_end": 0.2,
+        "setting": 1,
+        "warmup": 4,
+        "hold": 0.2
+    },
+    "chain_lander": {
+        "description": "3e-4",
+        "schedule": 3,
+        "schedule_start": 1.0,
+        "schedule_end": 0.4,
+        "setting": 1,
+        "warmup": 4,
+        "hold": 0.15
+    },
+  
+  
+    
+    
+    "catapult": {
+        "description": "1e-4",
+        "schedule": 3,
+        "schedule_start": 1.0,
+        "schedule_end": 0.0,
+        "setting": 1, 
+        "warmup": 4,
+        "hold": 0.25
+    },
+    "mjc_walker": {
+        "description": "1e-4",
+        "schedule": 3,
+        "schedule_start": 1.0,
+        "schedule_end": 0.0,
+        "setting": 1,
+        "warmup": 2000,
+        "hold": 0.1
+    },
+    "h17_unicycle": {
+        "description": "1e-4",
+        "learning_rate": 3e-4,
+        "schedule": 3,
+        "schedule_start": 1.0,
+        "schedule_end": 0.0,
+        "setting": 1,
+        "warmup": 2000,
+        "hold": 0.1
+    },
+    "car_launch": {
+        "description": "1e-4",
+        "schedule": 2,
+        "schedule_start": 1.0,
+        "schedule_end": 0.0,
+        "setting": 0,
+        "warmup": 2000,
+        "hold": 0.0
+    }, 
+
+  
+  
+  
+  
+  
+    "catcher_v3": {
+        "description": "3e-5",
+        "schedule": 3,
+        "schedule_start":1.0,
+        "schedule_end": 0.0,
+        "setting": 1,
+        "warmup": 20,
+        "hold": 0.15
+    },
+    "grasp_easy": {
+        "description": "3e-5",
+        "schedule": 3,
+        "schedule_start": 1.0,
+        "schedule_end": 0.0,
+        "setting": 1,
+        "warmup": 16,
+        "hold": 0.35
+    },
+  
+  
+  
+  
+  
+    "trampoline": {
+        "description": "1e-5",
+        "schedule": 3,
+        "schedule_start": 1.0,
+        "schedule_end": 0.0,
+        "setting": 1,
+        "warmup": 4,
+        "hold": 0.15
+    },
+    "hard_lunar_lander": {
+        "description": "1e-5",
+        "schedule": 3,
+        "schedule_start": 1.0,
+        "schedule_end": 0.0,
+        "setting": 1,
+        "warmup": 4,
+        "hold": 0.15
+    }
+  }
+  
