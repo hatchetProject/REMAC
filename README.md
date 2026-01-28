@@ -31,9 +31,11 @@ uv run src_lora/train_flow_base.py --config.run-path ./logs-expert/<wandb-run-na
 uv run src_lora/eval_flow_no_lora.py --config.run-path ./logs-bc/<wandb-run-name> --output-dir <output-dir>
 ```
 
-2. Then finetune the trained policies using REMAC
+2. Change the `<wandb-run-name>` to `base_model` in `logs-bc`.
+Then finetune the trained policies with:
 ```
 bash run_all.sh
 ```
 The above script will train and evaluate the 12 experiments in sequence.
 
+Note: As there are 12 tasks, the number of tasks running should be divisible by the number of GPUs you use.

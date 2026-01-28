@@ -75,7 +75,6 @@ def ep_solved_plot():
         .reset_index(name="avg_solved")
     )
 
-
     avg_bid = (
         df_bid.groupby(["level", "delay"])
         ["returned_episode_solved"]

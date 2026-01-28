@@ -29,14 +29,14 @@ class Config:
         "worlds/l/catapult.json",
         "worlds/l/cartpole_thrust.json",
         "worlds/l/hard_lunar_lander.json",
-        # "worlds/l/mjc_half_cheetah.json",
-        # "worlds/l/mjc_swimmer.json",
-        # "worlds/l/mjc_walker.json",
-        # "worlds/l/h17_unicycle.json",
-        # "worlds/l/chain_lander.json",
-        # "worlds/l/catcher_v3.json",
-        # "worlds/l/trampoline.json",
-        # "worlds/l/car_launch.json",
+        "worlds/l/mjc_half_cheetah.json",
+        "worlds/l/mjc_swimmer.json",
+        "worlds/l/mjc_walker.json",
+        "worlds/l/h17_unicycle.json",
+        "worlds/l/chain_lander.json",
+        "worlds/l/catcher_v3.json",
+        "worlds/l/trampoline.json",
+        "worlds/l/car_launch.json",
     )
     seed: int = 0
     # Number of environments to run in parallel.

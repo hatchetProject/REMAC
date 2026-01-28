@@ -164,17 +164,6 @@ def main(
     static_env_params = kenv_state.StaticEnvParams(**train_expert.LARGE_ENV_PARAMS, frame_skip=train_expert.FRAME_SKIP)
     env_params = kenv_state.EnvParams()
 
-    if config.seq == "top":
-        level_paths=level_paths[:4]
-    elif config.seq == "mid":
-        level_paths=level_paths[4:8]
-    elif config.seq == "bot":
-        level_paths=level_paths[8:12]
-    elif config.seq == "hard":
-        level_paths=("worlds/l/grasp_easy.json", "worlds/l/catapult.json", "worlds/l/hard_lunar_lander.json",
-                                            "worlds/l/mjc_half_cheetah.json",)
-                                            # "worlds/l/mjc_swimmer.json", "worlds/l/mjc_walker.json",
-                                            # "worlds/l/h17_unicycle.json", "worlds/l/trampoline.json",)
 
     levels = train_expert.load_levels(level_paths, static_env_params, env_params)
     static_env_params = static_env_params.replace(screen_dim=train_expert.SCREEN_DIM)
