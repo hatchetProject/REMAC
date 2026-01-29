@@ -7,8 +7,10 @@ The simulation experiments' source code and implementation of paper [Real-Time R
 ```bash
 # Clone Kinetix submodule
 git submodule update --init
+
 # Install uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
+
 # Install dependencies
 uv sync
 ```
@@ -17,7 +19,7 @@ uv sync
 
 1. First follow the implementation of [RTC](https://github.com/Physical-Intelligence/real-time-chunking-kinetix) to produce the base checkpoints:
 
-```
+```bash
 # Train expert policies with RL. Checkpoints, videos, and stats are written to ./logs-expert/<wandb-run-name>
 uv run src_lora/train_expert.py 
 
@@ -33,9 +35,31 @@ uv run src_lora/eval_flow_no_lora.py --config.run-path ./logs-bc/<wandb-run-name
 
 2. Change the `<wandb-run-name>` to `base_model` in `logs-bc`.
 Then finetune the trained policies with:
-```
+
+```bash
 bash run_all.sh
 ```
+
 The above script will train and evaluate the 12 experiments in sequence.
 
-Note: As there are 12 tasks, the number of tasks running should be divisible by the number of GPUs you use.
+> Note: As there are 12 tasks, the number of tasks running should be divisible by the number of GPUs you use.
+
+
+## Acknowledgement
+
+Thanks to these amazing repositories: [RTC](https://github.com/Physical-Intelligence/real-time-chunking-kinetix), [openpi](https://github.com/Physical-Intelligence/openpi) and other inspiring works.
+
+## Citation
+
+If you find this work useful, please consider citing:
+```
+@misc{wang2026realtimerobotexecutionmasked,
+      title={Real-Time Robot Execution with Masked Action Chunking}, 
+      author={Haoxuan Wang and Gengyu Zhang and Yan Yan and Yuzhang Shang and Ramana Rao Kompella and Gaowen Liu},
+      year={2026},
+      eprint={2601.20130},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO},
+      url={https://arxiv.org/abs/2601.20130}, 
+}
+```
