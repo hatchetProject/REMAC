@@ -1,8 +1,13 @@
 # REMAC-Kinetix
 
+[![ArXiv](https://img.shields.io/badge/ArXiv-2601.20130-b31b1b?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2601.20130)
+[![Webpage](https://img.shields.io/badge/Webpage-REMAC--Kinetix-2f80ed?style=for-the-badge&logo=googlechrome&logoColor=white)](https://remac-async.github.io/)
+[![OpenReview](https://img.shields.io/badge/OpenReview-Forum-8c1d40?style=for-the-badge&logo=openreview&logoColor=white)](https://openreview.net/)
+
 The simulation experiments' source code and implementation of paper [Real-Time Robot Execution with Masked Action Chunking](https://remac-async.github.io/).
 
 ## Update log
+- Jan 28, 2026: Initial code upload
 - Feb 12, 2026: Reorganized the code. As I merged the base model training and LoRA finetuning code together, feel free to raise issues if there are problems.
 
 ## Installation
