@@ -2,6 +2,9 @@
 
 The simulation experiments' source code and implementation of paper [Real-Time Robot Execution with Masked Action Chunking](https://remac-async.github.io/).
 
+## Update log
+- Feb 12, 2026: Reorganized the code. As I merged the base model training and LoRA finetuning code together, feel free to raise issues if there are problems.
+
 ## Installation
 
 ```bash
@@ -40,7 +43,7 @@ Then finetune the trained policies with:
 bash run_all.sh
 ```
 
-The above script will train and evaluate the 12 experiments in sequence.
+The above script will run the proposed method, and evaluate on the 12 tasks in sequence.
 
 > Note: As there are 12 tasks, the number of tasks running should be divisible by the number of GPUs you use.
 

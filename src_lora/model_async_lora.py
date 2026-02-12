@@ -462,7 +462,6 @@ class LoRAFlowPolicy(nnx.Module):
         # --- RNGs ---
         noise_rng, time_rng, mask_rng, dropout_rng = jax.random.split(rng, 4)
 
-        # --- time & noise (keep your schedule; here matches your current flow mix) ---
         time  = jax.random.uniform(time_rng, (obs_curr.shape[0],))                   # [B]
         noise = jax.random.normal(noise_rng, shape=action_curr.shape)                # [B,T,D]
 

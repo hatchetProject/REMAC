@@ -16,12 +16,9 @@ import kinetix.environment.wrappers as wrappers
 import kinetix.render.renderer_pixels as renderer_pixels
 import pandas as pd
 import tyro
-from dataclasses import replace
-# import model as _model
-import model_async_lora as _model
-import train_expert
 
-from jax import debug
+import model as _model
+import train_expert
 
 
 @dataclasses.dataclass(frozen=True)
@@ -44,7 +41,6 @@ class BIDMethodConfig:
 @dataclasses.dataclass(frozen=True)
 class EvalConfig:
     step: int = -1
-    seq: str = "bot"
     weak_step: int | None = None
     num_evals: int = 2048
     num_flow_steps: int = 5
@@ -55,21 +51,16 @@ class EvalConfig:
 
     model: _model.ModelConfig = _model.ModelConfig()
 
-    model_path: str = "./logs-bc/debug"
-
-    output_dir: str = "debug"
-    save_path: str = "results_debug.csv"
-
 
 def eval(
     config: EvalConfig,
     env: kenv.environment.Environment,
     rng: jax.Array,
     level: kenv_state.EnvState,
-    policy: _model.LoRAFlowPolicy,
+    policy: _model.FlowPolicy,
     env_params: kenv_state.EnvParams,
     static_env_params: kenv_state.EnvParams,
-    weak_policy: _model.LoRAFlowPolicy | None = None,
+    weak_policy: _model.FlowPolicy | None = None,
 ):
     env = train_expert.BatchEnvWrapper(
         wrappers.LogWrapper(wrappers.AutoReplayWrapper(train_expert.NoisyActionWrapper(env))), config.num_evals
@@ -84,46 +75,82 @@ def eval(
             next_obs, next_env_state, reward, done, info = env.step(key, env_state, action, env_params)
             return (rng, next_obs, next_env_state), (done, env_state, info)
 
-        rng, obs, env_state, action_chunk, n, es, ds = carry
+        rng, obs, env_state, action_chunk, n = carry
         rng, key = jax.random.split(rng)
-        
-        pred_action_chunk = policy.action_without_lora(key, obs, action_chunk, es, ds, config.inference_delay, config.num_flow_steps)
+        if isinstance(config.method, NaiveMethodConfig):
+            next_action_chunk = policy.action(key, obs, config.num_flow_steps)
+        elif isinstance(config.method, RealtimeMethodConfig):
+            prefix_attention_horizon = policy.action_chunk_size - config.execute_horizon
+            assert (
+                config.inference_delay <= policy.action_chunk_size
+                and prefix_attention_horizon <= policy.action_chunk_size
+            ), f"{config.inference_delay=} {prefix_attention_horizon=} {policy.action_chunk_size=}"
+            print(
+                f"{config.execute_horizon=} {config.inference_delay=} {prefix_attention_horizon=} {policy.action_chunk_size=}"
+            )
+            next_action_chunk = policy.realtime_action(
+                key,
+                obs,
+                config.num_flow_steps,
+                action_chunk,
+                config.inference_delay,
+                prefix_attention_horizon,
+                config.method.prefix_attention_schedule,
+                config.method.max_guidance_weight,
+            )
+        elif isinstance(config.method, BIDMethodConfig):
+            prefix_attention_horizon = policy.action_chunk_size - config.execute_horizon
+            if config.method.bid_k is not None:
+                assert weak_policy is not None, "weak_policy is required for BID"
+            next_action_chunk = policy.bid_action(
+                key,
+                obs,
+                config.num_flow_steps,
+                action_chunk,
+                config.inference_delay,
+                prefix_attention_horizon,
+                config.method.n_samples,
+                bid_k=config.method.bid_k,
+                bid_weak_policy=weak_policy if config.method.bid_k is not None else None,
+            )
+        else:
+            raise ValueError(f"Unknown method: {config.method}")
 
+        # we execute `inference_delay` actions from the *previously generated* action chunk, and then the remaining
+        # `execute_horizon - inference_delay` actions from the newly generated action chunk
         action_chunk_to_execute = jnp.concatenate(
             [
                 action_chunk[:, : config.inference_delay],
-                pred_action_chunk[:, config.inference_delay : config.execute_horizon],
+                next_action_chunk[:, config.inference_delay : config.execute_horizon],
             ],
             axis=1,
         )
-        
+        # throw away the first `execute_horizon` actions from the newly generated action chunk, to align it with the
+        # correct frame of reference for the next scan iteration
         next_action_chunk = jnp.concatenate(
             [
-                pred_action_chunk[:, config.execute_horizon :],
+                next_action_chunk[:, config.execute_horizon :],
                 jnp.zeros((obs.shape[0], config.execute_horizon, policy.action_dim)),
             ],
             axis=1,
         )
-
         next_n = jnp.concatenate([n[config.execute_horizon :], jnp.zeros(config.execute_horizon, dtype=jnp.int32)])
         (rng, next_obs, next_env_state), (dones, env_states, infos) = jax.lax.scan(
             step, (rng, obs, env_state), action_chunk_to_execute.transpose(1, 0, 2)
         )
-
-        return (rng, next_obs, next_env_state, next_action_chunk, next_n, es, ds), (dones, env_states, infos)
+        # if config.inference_delay > 0:
+        #     infos["match"] = jnp.mean(jnp.abs(fixed_prefix - action_chunk_to_execute))
+        return (rng, next_obs, next_env_state, next_action_chunk, next_n), (dones, env_states, infos)
 
     rng, key = jax.random.split(rng)
     obs, env_state = env.reset_to_level(key, level, env_params)
     rng, key = jax.random.split(rng)
-    es = jnp.ones(obs.shape[0], dtype=jnp.int32) * config.execute_horizon
-    ds = jnp.ones(obs.shape[0], dtype=jnp.int32) * config.inference_delay
-    init_action_chunk = jnp.zeros((obs.shape[0], 8, 6))
-    action_chunk = policy.action_without_lora(key, obs, init_action_chunk, es, ds, config.inference_delay, config.num_flow_steps)  # [batch, horizon, action_dim]
+    action_chunk = policy.action(key, obs, config.num_flow_steps)  # [batch, horizon, action_dim]
     n = jnp.ones(action_chunk.shape[1], dtype=jnp.int32)
     scan_length = math.ceil(env_params.max_timesteps / config.execute_horizon)
     _, (dones, env_states, infos) = jax.lax.scan(
         execute_chunk,
-        (rng, obs, env_state, action_chunk, n, es, ds),  ## THIS NEED TO CHANGE!!!
+        (rng, obs, env_state, action_chunk, n),
         None,
         length=scan_length,
     )
@@ -159,12 +186,10 @@ def main(
         "worlds/l/car_launch.json",
     ),
     seed: int = 0,
+    output_dir: str | None = "eval_output",
 ):
-    run_path = config.model_path
     static_env_params = kenv_state.StaticEnvParams(**train_expert.LARGE_ENV_PARAMS, frame_skip=train_expert.FRAME_SKIP)
     env_params = kenv_state.EnvParams()
-
-
     levels = train_expert.load_levels(level_paths, static_env_params, env_params)
     static_env_params = static_env_params.replace(screen_dim=train_expert.SCREEN_DIM)
 
@@ -198,25 +223,14 @@ def main(
     pspec = jax.sharding.PartitionSpec("x")
     sharding = jax.sharding.NamedSharding(mesh, pspec)
 
-    lora_model_config = _model.ModelConfig(
-        channel_dim=config.model.channel_dim,
-        channel_hidden_dim=config.model.channel_hidden_dim,
-        token_hidden_dim=config.model.token_hidden_dim,
-        num_layers=config.model.num_layers,
-        action_chunk_size=config.model.action_chunk_size,
-        lora_rank=config.model.lora_rank,
-        lora_alpha=config.model.lora_alpha,
-        lora_dropout=config.model.lora_dropout,
-        enable_lora=config.model.enable_lora,
-    )
     @functools.partial(jax.jit, static_argnums=(0,), in_shardings=sharding, out_shardings=sharding)
     @functools.partial(shard_map.shard_map, mesh=mesh, in_specs=(None, pspec, pspec, pspec, pspec), out_specs=pspec)
     @functools.partial(jax.vmap, in_axes=(None, 0, 0, 0, 0))
     def _eval(config: EvalConfig, rng: jax.Array, level: kenv_state.EnvState, state_dict, weak_state_dict):
-        policy = _model.LoRAFlowPolicy(
+        policy = _model.FlowPolicy(
             obs_dim=obs_dim,
             action_dim=action_dim,
-            config=lora_model_config,
+            config=config.model,
             rngs=nnx.Rngs(rng),
         )
         graphdef, state = nnx.split(policy)
@@ -248,9 +262,47 @@ def main(
                 results["level"].append(level_paths[i])
                 results["execute_horizon"].append(execute_horizon)
 
-    pathlib.Path(config.output_dir).mkdir(parents=True, exist_ok=True)
+            c = dataclasses.replace(
+                config, inference_delay=inference_delay, execute_horizon=execute_horizon, method=RealtimeMethodConfig()
+            )
+            out = jax.device_get(_eval(c, rngs, levels, state_dicts, weak_state_dicts))
+            for i in range(len(level_paths)):
+                for k, v in out.items():
+                    results[k].append(v[i])
+                results["delay"].append(inference_delay)
+                results["method"].append("realtime")
+                results["level"].append(level_paths[i])
+                results["execute_horizon"].append(execute_horizon)
+
+            c = dataclasses.replace(
+                config, inference_delay=inference_delay, execute_horizon=execute_horizon, method=BIDMethodConfig()
+            )
+            out = jax.device_get(_eval(c, rngs, levels, state_dicts, weak_state_dicts))
+            for i in range(len(level_paths)):
+                for k, v in out.items():
+                    results[k].append(v[i])
+                results["delay"].append(inference_delay)
+                results["method"].append("bid")
+                results["level"].append(level_paths[i])
+                results["execute_horizon"].append(execute_horizon)
+
+            c = dataclasses.replace(
+                config,
+                inference_delay=inference_delay,
+                execute_horizon=execute_horizon,
+                method=RealtimeMethodConfig(prefix_attention_schedule="zeros"),
+            )
+            out = jax.device_get(_eval(c, rngs, levels, state_dicts, weak_state_dicts))
+            for i in range(len(level_paths)):
+                for k, v in out.items():
+                    results[k].append(v[i])
+                results["delay"].append(inference_delay)
+                results["method"].append("hard_masking")
+                results["level"].append(level_paths[i])
+                results["execute_horizon"].append(execute_horizon)
+    pathlib.Path(output_dir).mkdir(parents=True, exist_ok=True)
     df = pd.DataFrame(results)
-    df.to_csv(pathlib.Path(config.output_dir) / config.save_path, index=False)
+    df.to_csv(pathlib.Path(output_dir) / "results.csv", index=False)
 
 
 if __name__ == "__main__":
