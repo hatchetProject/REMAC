@@ -15,7 +15,6 @@
 - [Usage](#usage)
   - [Stage 1: Train Base Model](#stage-1-train-base-model)
   - [Stage 2: Fine-tune with LoRA](#stage-2-fine-tune-with-lora)
-- [Troubleshooting](#troubleshooting)
 - [Update Log](#update-log)
 - [Acknowledgements](#acknowledgements)
 - [Citation](#citation)
@@ -123,24 +122,6 @@ The `run_all.sh` script will:
 3. Generate results and performance metrics
 
 > **Important:** The number of tasks (12) should be divisible by the number of GPUs available. For multi-GPU setups, adjust the parallelization settings in `run_all.sh` accordingly.
-
-## Troubleshooting
-
-### Common Issues and Solutions
-
-**Submodule Initialization Fails:**
-```bash
-# Force update submodules
-git submodule update --init --recursive --force
-```
-
-**uv Installation Issues:**
-```bash
-# Verify uv is in PATH
-export PATH="$HOME/.cargo/bin:$PATH"
-source ~/.bashrc  # or ~/.zshrc for zsh users
-uv --version
-```
 
 
 ## Update Log
