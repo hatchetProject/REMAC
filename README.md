@@ -25,7 +25,7 @@
 Before installation, ensure your system meets the following requirements:
 
 - **GPU**: CUDA-compatible GPU with 12GB+ VRAM (recommended for training)
-- **OS**: Test on Ubuntu 22.04+
+- **OS**: Ubuntu 22.04+
 
 ## Installation
 
